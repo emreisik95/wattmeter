@@ -9,15 +9,34 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
     private let store: UsageStore
     private let limits: LimitsConfig
     private let settings: AppSettings
+    private let budgetEvaluator: BudgetEvaluator
+    private let toolUsageStore: ToolUsageStore
+    private let profileManager: ProfileManager
+    private let serviceStatusMonitor: ServiceStatusMonitor
+    private let pricingMonitor: PricingMonitor
     private var cancellables = Set<AnyCancellable>()
     private var titleTimer: Timer?
     private var dataRefreshTimer: Timer?
     private var outsideClickMonitor: Any?
 
-    init(store: UsageStore, limits: LimitsConfig, settings: AppSettings) {
+    init(
+        store: UsageStore,
+        limits: LimitsConfig,
+        settings: AppSettings,
+        budgetEvaluator: BudgetEvaluator,
+        toolUsageStore: ToolUsageStore,
+        profileManager: ProfileManager,
+        serviceStatusMonitor: ServiceStatusMonitor,
+        pricingMonitor: PricingMonitor
+    ) {
         self.store = store
         self.limits = limits
         self.settings = settings
+        self.budgetEvaluator = budgetEvaluator
+        self.toolUsageStore = toolUsageStore
+        self.profileManager = profileManager
+        self.serviceStatusMonitor = serviceStatusMonitor
+        self.pricingMonitor = pricingMonitor
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         self.popover = NSPopover()
         super.init()
@@ -27,6 +46,11 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
                 .environmentObject(store)
                 .environmentObject(limits)
                 .environmentObject(settings)
+                .environmentObject(budgetEvaluator)
+                .environmentObject(toolUsageStore)
+                .environmentObject(profileManager)
+                .environmentObject(serviceStatusMonitor)
+                .environmentObject(pricingMonitor)
                 .tint(Theme.accent)
         )
         popover.contentViewController = host
@@ -166,6 +190,9 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
         }
     }
 
+    /// Public entry point for URL scheme open action.
+    func openPopover() { togglePopover() }
+
     private func togglePopover() {
         guard let button = statusItem.button else { return }
         if popover.isShown {
@@ -252,8 +279,13 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
         menu.addItem(refresh)
         let copy = item("Copy Usage to Clipboard", action: #selector(copyUsageItem), key: "c")
         menu.addItem(copy)
-        let export = item("Export CSV…", action: #selector(exportCsvItem), key: "")
-        menu.addItem(export)
+        let exportItem = NSMenuItem(title: "Export…", action: nil, keyEquivalent: "")
+        let exportMenu = NSMenu()
+        exportMenu.addItem(item("CSV…", action: #selector(exportCsvItem), key: ""))
+        exportMenu.addItem(item("HTML…", action: #selector(exportHtmlItem), key: ""))
+        exportMenu.addItem(item("PDF…", action: #selector(exportPdfItem), key: ""))
+        exportItem.submenu = exportMenu
+        menu.addItem(exportItem)
         menu.addItem(.separator())
 
         // Tray display submenu
@@ -459,6 +491,14 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
 
     @objc private func exportCsvItem() {
         Export.saveCSV(entries: store.entries)
+    }
+
+    @objc private func exportHtmlItem() {
+        Export.saveHTML(entries: store.entries)
+    }
+
+    @objc private func exportPdfItem() {
+        Export.savePDF(entries: store.entries)
     }
 
     @objc private func setPlanItem(_ sender: NSMenuItem) {

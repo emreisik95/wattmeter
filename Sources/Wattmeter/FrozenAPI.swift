@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Combine
 
 // MARK: - F3 Multi-provider
 
@@ -84,8 +85,8 @@ struct BudgetEvent: Identifiable, Hashable {
 
 @MainActor
 final class BudgetEvaluator: ObservableObject {
-    @Published private(set) var lastEvents: [BudgetEvent] = []
-    @Published private(set) var budgets: [Budget] = []
+    @Published var lastEvents: [BudgetEvent] = []
+    @Published var budgets: [Budget] = []
 
     func setBudgets(_ b: [Budget]) { budgets = b }
 
@@ -113,11 +114,23 @@ struct ServiceStatus: Equatable, Hashable {
 
 @MainActor
 final class ServiceStatusMonitor: ObservableObject {
-    @Published private(set) var current: ServiceStatus = .healthy
-    @Published private(set) var lastCheck: Date?
+    @Published var current: ServiceStatus = .healthy
+    @Published var lastCheck: Date?
 
-    func start() {}
-    func stop() {}
+    /// Optional engine that drives this monitor. Set in WattmeterApp.
+    var engine: ServiceStatusEngine?
+
+    private var cancellables: Set<AnyCancellable> = []
+
+    func bind(to engine: ServiceStatusEngine) {
+        self.engine = engine
+        cancellables.removeAll()
+        engine.$current.receive(on: RunLoop.main).assign(to: &$current)
+        engine.$lastCheck.receive(on: RunLoop.main).assign(to: &$lastCheck)
+    }
+
+    func start() { engine?.start() }
+    func stop() { engine?.stop() }
 }
 
 // MARK: - F10 Pricing monitor
@@ -144,10 +157,20 @@ struct PricingChange: Equatable, Hashable, Identifiable {
 
 @MainActor
 final class PricingMonitor: ObservableObject {
-    @Published private(set) var changes: [PricingChange] = []
-    @Published private(set) var lastRefresh: Date?
+    @Published var changes: [PricingChange] = []
+    @Published var lastRefresh: Date?
 
-    func refresh() async {}
+    var engine: PricingMonitorEngine?
+
+    func bind(to engine: PricingMonitorEngine) {
+        self.engine = engine
+        engine.$changes.receive(on: RunLoop.main).assign(to: &$changes)
+        engine.$lastRefresh.receive(on: RunLoop.main).assign(to: &$lastRefresh)
+    }
+
+    func refresh() async {
+        await engine?.refresh()
+    }
 }
 
 // MARK: - F5 Profiles

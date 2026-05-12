@@ -44,5 +44,16 @@
 	<string>W9PBZCM4Ib3haOTBSK6E2xoO4mJeYk5NqfoneO/s9Oo=</string>
 	<key>SUScheduledCheckInterval</key>
 	<integer>86400</integer>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>dev.emreisik.Wattmeter.scheme</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>wattmeter</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

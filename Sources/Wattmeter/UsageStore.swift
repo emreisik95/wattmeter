@@ -132,8 +132,10 @@ final class UsageStore: ObservableObject {
         }
 
         lastRefresh = Date()
+        let entriesForWidget = entries
         Task.detached(priority: .background) { [weak self] in
             await self?.persistSnapshot()
+            _ = try? WidgetSnapshotWriter.write(from: entriesForWidget)
         }
     }
 }
