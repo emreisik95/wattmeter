@@ -6,7 +6,20 @@ Package.resolved
 *.xcworkspace
 Wattmeter.app/Contents/MacOS/Wattmeter
 Wattmeter.app/Contents/_CodeSignature/
+Wattmeter.app/Contents/Frameworks/
 Wattmeter.dmg
 *.zip
 AppIcon.icns.bak
+dmg_bg.orig.png
 .claude/
+
+# Sparkle vendor: keep only xcframework + bin tools
+vendor/sparkle/Symbols/
+vendor/sparkle/Sparkle Test App.app/
+vendor/sparkle/Sparkle.framework/
+vendor/sparkle/CHANGELOG
+vendor/sparkle/SampleAppcast.xml
+vendor/sparkle/INSTALL
+vendor/sparkle/bin/old_dsa_scripts/
+vendor/sparkle/bin/BinaryDelta
+vendor/sparkle/bin/generate_appcast

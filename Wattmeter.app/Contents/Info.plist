@@ -34,5 +34,15 @@
     <true/>
     <key>NSSupportsSuddenTermination</key>
     <true/>
+    <key>SUFeedURL</key>
+    <string>https://raw.githubusercontent.com/emreisik95/wattmeter/main/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>W9PBZCM4Ib3haOTBSK6E2xoO4mJeYk5NqfoneO/s9Oo=</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUScheduledCheckInterval</key>
+    <integer>86400</integer>
+    <key>SUAllowsAutomaticUpdates</key>
+    <true/>
 </dict>
 </plist>

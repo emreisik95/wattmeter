@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        _ = UpdaterBridge.shared
         statusController = StatusBarController(store: store, limits: limits, settings: settings)
     }
 }

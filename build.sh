@@ -7,8 +7,19 @@ swift build -c release
 
 APP="Wattmeter.app"
 BIN="$APP/Contents/MacOS/Wattmeter"
-mkdir -p "$APP/Contents/MacOS"
+FRAMEWORKS="$APP/Contents/Frameworks"
+
+mkdir -p "$APP/Contents/MacOS" "$FRAMEWORKS"
 cp -f .build/release/Wattmeter "$BIN"
+
+# Embed Sparkle.framework
+SPARKLE_SRC="vendor/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework"
+if [[ ! -d "$SPARKLE_SRC" ]]; then
+    echo "missing $SPARKLE_SRC — vendor checked out?"
+    exit 1
+fi
+rm -rf "$FRAMEWORKS/Sparkle.framework"
+cp -R "$SPARKLE_SRC" "$FRAMEWORKS/Sparkle.framework"
 
 # Refresh resources
 if [[ -f AppIcon.icns ]]; then

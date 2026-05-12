@@ -377,6 +377,9 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
         }
         menu.addItem(.separator())
 
+        let check = NSMenuItem(title: "Check for Updates…", action: #selector(UpdaterBridge.checkForUpdates(_:)), keyEquivalent: "")
+        check.target = UpdaterBridge.shared
+        menu.addItem(check)
         let about = item("About Wattmeter", action: #selector(aboutItem), key: "")
         menu.addItem(about)
         let quit = item("Quit", action: #selector(quitItem), key: "q")
