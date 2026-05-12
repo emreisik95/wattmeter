@@ -22,9 +22,13 @@ extension Data.SubSequence {
 }
 
 enum Parser {
-    static var projectsDir: URL {
+    static var defaultClaudeDir: URL {
         FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".claude/projects")
+            .appendingPathComponent(".claude")
+    }
+
+    static var projectsDir: URL {
+        defaultClaudeDir.appendingPathComponent("projects")
     }
 
     private static var fileCache: [String: (mtime: Date, entries: [UsageEntry])] = [:]
@@ -32,7 +36,10 @@ enum Parser {
 
     /// Streaming variant: invokes `onBatch` per file as soon as that file's entries are parsed.
     /// Files are visited newest-mtime-first so live/recent data shows up before older history.
-    static func loadAllEntriesStreaming(onBatch: ([UsageEntry]) -> Void) {
+    /// `claudeDir` is the root .claude directory; the `projects/` subfolder is read from there.
+    static func loadAllEntriesStreaming(claudeDir: URL = Parser.defaultClaudeDir,
+                                        onBatch: ([UsageEntry]) -> Void) {
+        let projectsDir = claudeDir.appendingPathComponent("projects")
         let fm = FileManager.default
         guard fm.fileExists(atPath: projectsDir.path) else { return }
         guard let enumerator = fm.enumerator(
@@ -111,7 +118,8 @@ enum Parser {
                     cacheWrite5m: cache5m,
                     cacheWrite1h: cache1h,
                     cacheRead: usage.cache_read_input_tokens ?? 0,
-                    cost: cost
+                    cost: cost,
+                    provider: "claude"
                 )
                 fileEntries.append(entry)
                 if seen.insert(key).inserted {
@@ -134,9 +142,9 @@ enum Parser {
     }
 
     /// Synchronous full load (kept for tests / callers that want all entries at once).
-    static func loadAllEntries() -> [UsageEntry] {
+    static func loadAllEntries(claudeDir: URL = Parser.defaultClaudeDir) -> [UsageEntry] {
         var out: [UsageEntry] = []
-        loadAllEntriesStreaming { batch in
+        loadAllEntriesStreaming(claudeDir: claudeDir) { batch in
             out.append(contentsOf: batch)
         }
         out.sort { $0.timestamp < $1.timestamp }
