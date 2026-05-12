@@ -7,6 +7,7 @@ Package.resolved
 Wattmeter.app/Contents/MacOS/Wattmeter
 Wattmeter.app/Contents/_CodeSignature/
 Wattmeter.app/Contents/Frameworks/
+Wattmeter.app/Contents/Resources/Wattmeter_Wattmeter.bundle/
 Wattmeter.dmg
 *.zip
 AppIcon.icns.bak
