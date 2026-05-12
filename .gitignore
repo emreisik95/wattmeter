@@ -13,6 +13,11 @@ AppIcon.icns.bak
 dmg_bg.orig.png
 .claude/
 
+# Raycast extension (separate npm pkg)
+raycast/wattmeter/node_modules/
+raycast/wattmeter/dist/
+raycast/wattmeter/.raycast-swift-build/
+
 # Sparkle vendor: keep only xcframework + bin tools
 vendor/sparkle/Symbols/
 vendor/sparkle/Sparkle Test App.app/
