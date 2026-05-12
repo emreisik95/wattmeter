@@ -27,6 +27,14 @@ if [[ -f AppIcon.icns ]]; then
     cp -f AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 fi
 
+# Ship the SPM resource bundle (Bundle.module — contains pricing.json etc.)
+SPM_BUNDLE=".build/release/Wattmeter_Wattmeter.bundle"
+if [[ -d "$SPM_BUNDLE" ]]; then
+    mkdir -p "$APP/Contents/Resources"
+    rm -rf "$APP/Contents/Resources/Wattmeter_Wattmeter.bundle"
+    cp -R "$SPM_BUNDLE" "$APP/Contents/Resources/Wattmeter_Wattmeter.bundle"
+fi
+
 # Strip symbols from final binary for smaller distribution
 strip -x -S "$BIN" 2>/dev/null || true
 
