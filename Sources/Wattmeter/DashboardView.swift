@@ -27,6 +27,8 @@ enum DashTab: String, CaseIterable, Identifiable {
     case models   = "Models"
     case projects = "Projects"
     case sessions = "Sessions"
+    case tools    = "Tools"
+    case insights = "Insights"
     case limits   = "Limits"
     var id: String { rawValue }
 
@@ -36,6 +38,8 @@ enum DashTab: String, CaseIterable, Identifiable {
         case .models:   return "cpu"
         case .projects: return "folder.fill"
         case .sessions: return "bubble.left.and.bubble.right.fill"
+        case .tools:    return "wrench.and.screwdriver.fill"
+        case .insights: return "sparkles"
         case .limits:   return "gauge.with.dots.needle.67percent"
         }
     }
@@ -46,7 +50,9 @@ enum DashTab: String, CaseIterable, Identifiable {
         case .models:   return "2"
         case .projects: return "3"
         case .sessions: return "4"
-        case .limits:   return "5"
+        case .tools:    return "5"
+        case .insights: return "6"
+        case .limits:   return "7"
         }
     }
 }
@@ -155,6 +161,7 @@ struct DashboardView: View {
                     .font(.title3)
                     .foregroundStyle(Theme.accent)
                 Text("Wattmeter").font(.title3).bold()
+                DashboardChips()
                 Spacer()
                 if tab != .limits {
                     Picker("Range", selection: $range) {
@@ -277,6 +284,8 @@ struct DashboardView: View {
         case .models:   ModelsTab(entries: searchFiltered, byModel: cachedByModel)
         case .projects: ProjectsTab(entries: searchFiltered, byProject: cachedByProject)
         case .sessions: SessionsTab(entries: searchFiltered, bySession: cachedBySession)
+        case .tools:    ToolBreakdownView()
+        case .insights: InsightsView()
         case .limits:   LimitsTab(entries: store.entries)
         }
     }
@@ -338,6 +347,21 @@ struct DashboardView: View {
     }
 }
 
+// MARK: - Header chips
+
+/// Profile selector + service-status dot, rendered next to the title in the
+/// dashboard header. Both depend on env-objects wired by the lead session at
+/// integration — kept in a thin wrapper so the rest of the header compiles
+/// even if either is replaced later.
+private struct DashboardChips: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            ProfileChip()
+            ServiceStatusBadge()
+        }
+    }
+}
+
 // MARK: - Overview tab
 
 private struct OverviewTab: View {
@@ -350,8 +374,10 @@ private struct OverviewTab: View {
 
     var body: some View {
         let s = summary
+        let standup = Insights.standup(all)
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
+                StandupCard(standup: standup, compact: true)
                 summaryRow(s)
                 Section(header: sectionHeader("Cost over time", icon: "chart.line.uptrend.xyaxis")) {
                     CostOverTimeChart(entries: entries).frame(height: 160)
@@ -579,6 +605,7 @@ private struct SessionsTab: View {
     let entries: [UsageEntry]
     let bySession: [Aggregator.SessionSlice]
     @State private var expanded: String?
+    @State private var replaySessionId: String?
 
     var body: some View {
         let sessions = bySession
@@ -596,7 +623,8 @@ private struct SessionsTab: View {
                                 SessionRow(
                                     session: s,
                                     fraction: total > 0 ? s.cost / total : 0,
-                                    expanded: expanded == s.sessionId
+                                    expanded: expanded == s.sessionId,
+                                    onReplay: { replaySessionId = s.sessionId }
                                 )
                             }
                             .buttonStyle(.plain)
@@ -611,13 +639,23 @@ private struct SessionsTab: View {
             }
             .padding(14)
         }
+        .sheet(item: Binding(
+            get: { replaySessionId.map { ReplayBinding(id: $0) } },
+            set: { replaySessionId = $0?.id }
+        )) { bind in
+            let sessEntries = entries.filter { $0.sessionId == bind.id }
+            SessionReplayView(sessionId: bind.id, entries: sessEntries)
+        }
     }
 }
+
+private struct ReplayBinding: Identifiable { let id: String }
 
 private struct SessionRow: View {
     let session: Aggregator.SessionSlice
     let fraction: Double
     let expanded: Bool
+    let onReplay: () -> Void
 
     var body: some View {
         HStack(spacing: 10) {
@@ -641,6 +679,14 @@ private struct SessionRow: View {
                 }
             }
             Spacer()
+            Button {
+                onReplay()
+            } label: {
+                Image(systemName: "play.rectangle.fill")
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(Theme.accent)
+            .help("Replay session transcript")
             Text(String(format: "$%.2f", session.cost))
                 .font(.callout).bold().monospacedDigit().foregroundStyle(Theme.accent)
             Text(String(format: "%.0f%%", fraction * 100))
