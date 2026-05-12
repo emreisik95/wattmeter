@@ -1,0 +1,11 @@
+.DS_Store
+.build/
+.swiftpm/
+Package.resolved
+*.xcodeproj
+*.xcworkspace
+Wattmeter.app/Contents/MacOS/Wattmeter
+Wattmeter.dmg
+*.zip
+AppIcon.icns.bak
+.claude/
