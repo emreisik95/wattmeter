@@ -1,8 +1,16 @@
 # Wattmeter
 
+> See your Claude Code usage effortlessly.
+
 Native macOS menubar app for tracking Claude Code usage — real-time 5-hour and weekly limits, cost breakdown by model/project/session, burn-rate forecast, threshold notifications, CSV export.
 
 Reads transcripts from `~/.claude/projects/` and live rate-limit data from `~/.claude/rate_limits.json` (populated by Claude Code's statusLine hook). All processing local — nothing leaves the machine.
+
+## Screenshots
+
+| Overview | Models | Limits |
+| :---: | :---: | :---: |
+| ![Overview](docs/screenshots/overview.png) | ![Models](docs/screenshots/models.png) | ![Limits](docs/screenshots/limits.png) |
 
 ## Features
 

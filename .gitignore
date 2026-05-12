@@ -5,6 +5,7 @@ Package.resolved
 *.xcodeproj
 *.xcworkspace
 Wattmeter.app/Contents/MacOS/Wattmeter
+Wattmeter.app/Contents/_CodeSignature/
 Wattmeter.dmg
 *.zip
 AppIcon.icns.bak
