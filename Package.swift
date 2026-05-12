@@ -13,6 +13,9 @@ let package = Package(
             name: "Wattmeter",
             dependencies: ["Sparkle"],
             path: "Sources/Wattmeter",
+            resources: [
+                .copy("Resources/pricing.json")
+            ],
             swiftSettings: [
                 .unsafeFlags(["-Osize", "-wmo"], .when(configuration: .release))
             ],

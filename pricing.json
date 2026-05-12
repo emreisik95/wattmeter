@@ -1,0 +1,19 @@
+{
+  "_comment": "Mirror of bundled Resources/pricing.json. Served via GitHub raw at https://raw.githubusercontent.com/emreisik95/wattmeter/main/pricing.json. Edit this and re-tag to broadcast a pricing change.",
+  "version": 1,
+  "updated": "2026-05-12",
+  "models": {
+    "claude-opus-4-7": {
+      "inputPerMTok": 15.0,
+      "outputPerMTok": 75.0
+    },
+    "claude-sonnet-4-6": {
+      "inputPerMTok": 3.0,
+      "outputPerMTok": 15.0
+    },
+    "claude-haiku-4-5": {
+      "inputPerMTok": 0.80,
+      "outputPerMTok": 4.0
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "_comment": "Seed pricing table for Wattmeter. Approximate Anthropic prices per 1M tokens (USD). The live monitor fetches https://raw.githubusercontent.com/emreisik95/wattmeter/main/pricing.json and diffs against this seed at launch.",
+  "version": 1,
+  "updated": "2026-05-12",
+  "models": {
+    "claude-opus-4-7": {
+      "inputPerMTok": 15.0,
+      "outputPerMTok": 75.0
+    },
+    "claude-sonnet-4-6": {
+      "inputPerMTok": 3.0,
+      "outputPerMTok": 15.0
+    },
+    "claude-haiku-4-5": {
+      "inputPerMTok": 0.80,
+      "outputPerMTok": 4.0
+    }
+  }
+}
