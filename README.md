@@ -46,6 +46,17 @@ No login. No API key. No telemetry. No cloud. The menubar icon and the data unde
 - 📈 **Burn-rate forecast** — projects time-to-limit at current trajectory. Knows when to slow down.
 - 🌡️ **7×24 heatmap** — see your work rhythm at a glance.
 - 🔔 **Threshold alerts** — toast at 75% / 90% / 100% of any limit. Configurable.
+- 💰 **Budgets + webhooks** — hard / soft caps per day / week / model / project, with Slack/Discord/generic webhook delivery. Webhook URL stored in Keychain, redacted in all logs.
+- 🛠️ **Tool attribution** — per-tool token + cost rollup (Read, Edit, Bash, Grep, …) from local Claude Code hooks. No data leaves the box.
+- 🚨 **Anomaly detector** — flags runs that burn >2σ above your baseline. Quiet by default, loud when it matters.
+- 📊 **Multi-provider** — Claude Code + Codex CLI in one dashboard. Cursor stub ready. Per-provider breakdown view.
+- 🪪 **Profiles** — switch between multiple `~/.claude/` trees (personal, work, sandbox). Snapshots isolated per profile.
+- 🔬 **Insights + session replay** — drill into a single session: tool timeline, cost per turn, model switches, full transcript scrubber.
+- 🟢 **Service status + pricing monitor** — live Anthropic status pill in the menubar; auto-refreshes pricing from the bundled `pricing.json` so cost math stays correct without a rebuild.
+- 📤 **Export** — CSV, HTML report, PDF summary. One click each from the menubar.
+- 🔗 **URL scheme + Raycast extension** — `wattmeter://refresh`, `wattmeter://open`, `wattmeter://export-csv`, `wattmeter://check-updates`. Raycast extension in [`raycast/wattmeter`](raycast/wattmeter).
+- 🧱 **Widget snapshot** — writes `widget_snapshot.json` to the App Group container for a future WidgetKit extension.
+- 🔄 **In-app auto-update** — Sparkle 2 with EdDSA-signed appcast. Updates land while you sleep.
 - ⚡ **Instant boot** — cached snapshot renders in <1s, parser streams the rest in-flight.
 - 🔒 **Signed + notarized + hardened runtime** — Gatekeeper accepts it. No right-click bypass.
 
@@ -115,9 +126,16 @@ One command. Bumps version, builds, signs, notarizes, staples, tags, publishes:
 
 ## Roadmap
 
-- [ ] In-app auto-updates (Sparkle 2)
-- [ ] Per-project budget alerts
-- [ ] Export to CSV / JSON
+- [x] In-app auto-updates (Sparkle 2)
+- [x] Per-project budget alerts + webhooks
+- [x] Export to CSV / HTML / PDF
+- [x] Multi-provider (Claude Code + Codex CLI)
+- [x] Tool-level attribution + anomaly detector
+- [x] Multi-profile support
+- [x] Session replay + insights
+- [x] Raycast extension + URL scheme
+- [ ] Full WidgetKit widget (snapshot JSON already written)
+- [ ] Cursor provider (stubbed)
 - [ ] Linux + Windows? *(probably not, but tempting)*
 
 ## License
