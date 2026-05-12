@@ -5,6 +5,19 @@
         <link>https://github.com/emreisik95/wattmeter</link>
         <description>Wattmeter auto-update feed</description>
         <item>
+            <title>Wattmeter 0.2.0</title>
+            <pubDate>Tue, 12 May 2026 19:13:42 +0300</pubDate>
+            <sparkle:version>4</sparkle:version>
+            <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<p>See <a href="https://github.com/emreisik95/wattmeter/releases/tag/v0.2.0">release notes</a>.</p>]]></description>
+            <enclosure
+                url="https://github.com/emreisik95/wattmeter/releases/download/v0.2.0/Wattmeter.dmg"
+                sparkle:edSignature="l/ayZHBGwzyzbgZW46fBmDDrEThNgFTynEVSb9b12GY19c/kITT8aRfVvHD1sZzsmCmrTWmOE/EuYc0bLkHyDg=="
+                length="2613837"
+                type="application/octet-stream" />
+        </item>
+        <item>
             <title>Wattmeter 0.1.2</title>
             <pubDate>Tue, 12 May 2026 18:23:37 +0300</pubDate>
             <sparkle:version>3</sparkle:version>
