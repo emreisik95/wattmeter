@@ -41,8 +41,11 @@ struct UsageEntry: Identifiable, Hashable, Codable {
     let cacheWrite1h: Int
     let cacheRead: Int
     let cost: Double
+    var provider: String?
 
     var totalTokens: Int {
         inputTokens + outputTokens + cacheWrite5m + cacheWrite1h + cacheRead
     }
+
+    var providerOrClaude: String { provider ?? "claude" }
 }

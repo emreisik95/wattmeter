@@ -23,6 +23,11 @@ let package = Package(
                               "-Xlinker", "@executable_path/../Frameworks"],
                              .when(configuration: .release))
             ]
+        ),
+        .testTarget(
+            name: "WattmeterTests",
+            dependencies: ["Wattmeter"],
+            path: "Tests/WattmeterTests"
         )
     ]
 )

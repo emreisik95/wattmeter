@@ -16,8 +16,17 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+DEV_MODE=0
+if [[ "${1:-}" == "--dev" ]]; then
+    DEV_MODE=1
+    shift
+fi
+
 VERSION="${1:-}"
-[[ -z "$VERSION" ]] && { echo "usage: $0 <version>  (e.g. 0.2.0)"; exit 1; }
+if [[ $DEV_MODE -eq 1 && -z "$VERSION" ]]; then
+    VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "Wattmeter.app/Contents/Info.plist")
+fi
+[[ -z "$VERSION" ]] && { echo "usage: $0 [--dev] <version>  (e.g. 0.2.0)"; exit 1; }
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "version must be X.Y.Z"; exit 1; }
 
 TAG="v${VERSION}"
@@ -34,17 +43,24 @@ ok()   { echo -e "${GRN}OK${NC}   $*"; }
 step() { echo -e "${YEL}== $* ==${NC}"; }
 
 # Preflight
-[[ -z "$(git status --porcelain)" ]] || fail "working tree dirty — commit/stash first"
-git rev-parse "$TAG" >/dev/null 2>&1 && fail "tag $TAG already exists"
-gh release view "$TAG" >/dev/null 2>&1 && fail "release $TAG already exists on GitHub"
+if [[ $DEV_MODE -eq 0 ]]; then
+    [[ -z "$(git status --porcelain)" ]] || fail "working tree dirty — commit/stash first"
+    git rev-parse "$TAG" >/dev/null 2>&1 && fail "tag $TAG already exists"
+    gh release view "$TAG" >/dev/null 2>&1 && fail "release $TAG already exists on GitHub"
+fi
 [[ -x "$SIGN_UPDATE" ]] || fail "missing $SIGN_UPDATE"
 
-# 1. Bump version
-step "bump to $VERSION"
-BUILD_NUM=$(( $(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$INFO_PLIST") + 1 ))
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$INFO_PLIST"
-/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUM" "$INFO_PLIST"
-ok "version $VERSION build $BUILD_NUM"
+# 1. Bump version (skip in dev mode — keep current)
+if [[ $DEV_MODE -eq 0 ]]; then
+    step "bump to $VERSION"
+    BUILD_NUM=$(( $(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$INFO_PLIST") + 1 ))
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$INFO_PLIST"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUM" "$INFO_PLIST"
+    ok "version $VERSION build $BUILD_NUM"
+else
+    BUILD_NUM=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$INFO_PLIST")
+    step "DEV build at $VERSION ($BUILD_NUM)"
+fi
 
 # 2. Build
 step "build"
@@ -65,6 +81,14 @@ codesign --force --options runtime --timestamp --entitlements Wattmeter.entitlem
     --sign "$IDENTITY" Wattmeter.app
 codesign --verify --strict --deep Wattmeter.app
 ok "app signed"
+
+if [[ $DEV_MODE -eq 1 ]]; then
+    step "DEV mode: app signed; skipping dmg/notarize/tag/release/appcast"
+    echo
+    echo -e "${GRN}== DEV BUILD COMPLETE ==${NC}"
+    echo "Wattmeter.app ready for local smoke test."
+    exit 0
+fi
 
 # 4. Build DMG
 step "build dmg"

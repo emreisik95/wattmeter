@@ -12,7 +12,7 @@ final class UsageStore: ObservableObject {
             ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
         let dir = base.appendingPathComponent("Wattmeter", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("snapshot.plist")
+        return dir.appendingPathComponent("snapshot.v2.plist")
     }
 
     init() {
