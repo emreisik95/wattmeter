@@ -12,9 +12,29 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-C15F3C.svg)](LICENSE)
 [![Local only](https://img.shields.io/badge/Telemetry-zero-444)](#privacy)
 
-[**Download**](../../releases/latest) · [Screenshots](#screenshots) · [How it works](#how-it-works) · [Build](#build-from-source)
+[**Download**](../../releases/latest) · [What's new](#whats-new-in-v020) · [Screenshots](#screenshots) · [How it works](#how-it-works) · [Build](#build-from-source)
 
 </div>
+
+---
+
+## What's new in v0.2.0
+
+A pile. The short version:
+
+- **Codex CLI** lands alongside Claude Code in one dashboard. Cursor wired (stub).
+- **Budgets + webhooks** — hard & soft caps per day / week / model / project, with Slack / Discord / generic webhook delivery. Webhook URL lives in Keychain.
+- **Tool attribution** — see exactly how much each tool (Read, Edit, Bash, Grep, MCP, …) cost you.
+- **Anomaly detector** — flags runs that burn >2σ above your baseline.
+- **Profiles** — switch between multiple `~/.claude/` trees (personal / work / sandbox). Each gets its own snapshot.
+- **Insights + session replay** — drill into one session: tool timeline, cost per turn, model switches, full transcript scrubber.
+- **Service status** + **pricing monitor** — Anthropic status pill in the menubar; pricing auto-refreshes from a bundled `pricing.json`.
+- **Exports** — CSV, HTML report, PDF summary.
+- **URL scheme** (`wattmeter://refresh|open|export-csv|check-updates`) + **Raycast extension** in [`raycast/wattmeter`](raycast/wattmeter).
+- **Widget snapshot** — `widget_snapshot.json` ready for a future WidgetKit extension.
+- **Sparkle 2 auto-update** with EdDSA-signed appcast.
+
+Full feature list below. Old roadmap mostly checked.
 
 ---
 
@@ -76,31 +96,51 @@ Or [grab the DMG](../../releases/latest) the normal way → drag to `/Applicatio
 ## How it works
 
 ```
-  ┌─ ~/.claude/projects/**.jsonl ──┐
-  │  (every session you ever ran)  │
-  └────────────┬───────────────────┘
-               │  byte-prefilter
-               │  mtime cache
-               ▼
-       Parser.swift  ── stream ──▶  UsageStore  ──▶  SwiftUI
-                                       │
-       ~/.claude/rate_limits.json ─────┘  (statusLine hook)
+  ┌─ Claude Code ~/.claude/projects/**.jsonl ─┐
+  │  Codex CLI  ~/.codex/sessions/**.jsonl    │  ── provider fan-out (TaskGroup) ──┐
+  │  Cursor     (stubbed)                     │                                    │
+  └────────────┬──────────────────────────────┘                                    ▼
+               │  byte-prefilter + mtime cache                          UsageStore (merged)
+               ▼                                                                   │
+       Parser.swift  ── stream ──────────────────────────────────────▶  SwiftUI dashboard
+                                       ▲                                           │
+       ~/.claude/rate_limits.json ─────┘  (statusLine hook)                        │
+                                                                                   ▼
+       ServiceStatusMonitor  ◀── status.anthropic.com                  widget_snapshot.json
+       PricingMonitor        ◀── bundled pricing.json (auto-refresh)   (App Group container)
+       BudgetEvaluator       ──▶ webhook (Keychain URL, redacted logs)
 ```
 
 - **`Parser.swift`** — streaming JSONL with byte-level prefilter + per-file mtime cache. Reads only what changed.
-- **`UsageStore.swift`** — `AsyncStream` refresh, 120ms UI throttle, persistent plist snapshot at `~/Library/Application Support/Wattmeter/`.
-- **`Aggregator.swift`** — model / project / session / heatmap rollups.
+- **`UsageStore.swift`** — multi-provider fan-out via `TaskGroup`. Claude streams per-file batches with 120ms UI throttle; secondary providers (Codex, …) fetch concurrently and merge.
+- **`ProviderMerge.swift`** — dedup-aware merge across providers; ids namespaced per provider.
+- **`Aggregator.swift`** — model / project / session / tool / heatmap rollups.
 - **`Forecasting.swift`** — burn-rate projection.
 - **`Limits.swift`** — watches `~/.claude/rate_limits.json` with mtime + content-fingerprint dedup.
+- **`BudgetEvaluator.swift`** — soft / hard caps per day / week / model / project. Pushes events to webhooks.
+- **`ServiceStatusMonitor.swift`** / **`PricingMonitor.swift`** — Combine-mirrored engines, refresh on a schedule, status pill in the menubar.
+- **`ProfileManager.swift`** — switches between multiple `~/.claude/` trees with isolated snapshots.
+- **`ToolUsageStore.swift`** — per-tool token + cost rollup driven by Claude Code hooks.
+- **`URLSchemeHandler.swift`** — `wattmeter://` actions (refresh, open, export-csv, check-updates).
+- **`WidgetSnapshotWriter.swift`** — atomic JSON write into the App Group container for the (future) WidgetKit extension.
+- **`UpdaterBridge.swift`** — Sparkle 2 wrapper. EdDSA verifies every download.
 - **`Theme.swift`** — single Crail accent (`#C15F3C`) + semantic limit colors. Zero rainbow soup.
 
-Pure SwiftUI + AppKit. **Zero external dependencies.** Builds in seconds.
+Pure SwiftUI + AppKit. The only external dependency is **Sparkle** (vendored, signed, sandboxed XPC). Builds in seconds.
 
 ## Privacy
 
-Everything happens on your machine. Nothing leaves it. There is no analytics, no error reporting, no "phone home." If you `nettop` Wattmeter you'll see exactly zero outbound traffic.
+Everything happens on your machine. Nothing leaves it by default. There is no analytics, no error reporting, no "phone home."
 
-The one file Wattmeter writes outside its own bundle is `~/.claude/settings.json` — a tiny `statusLine` hook so Claude Code emits live rate-limit numbers. You can remove it any time.
+The only outbound traffic — and only if you turn them on — is:
+
+- **Sparkle auto-update** → `raw.githubusercontent.com` (appcast.xml) + GitHub releases (DMG). Disable in **Settings → Updates**.
+- **Service status pill** → `status.anthropic.com` JSON status feed. Disable in **Settings → Monitors**.
+- **Budget webhook** → your own Slack / Discord / generic webhook URL. Off until you paste a URL. URL stored in Keychain, **redacted in every log line**.
+
+The one file Wattmeter writes outside its own sandbox is `~/.claude/settings.json` — a tiny `statusLine` hook so Claude Code emits live rate-limit numbers, plus optional tool-attribution hooks. You can remove either any time.
+
+`nettop` Wattmeter with all those toggles off → exactly zero outbound traffic.
 
 ## Build from source
 
