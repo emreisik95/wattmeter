@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+    <channel>
+        <title>Wattmeter</title>
+        <link>https://github.com/emreisik95/wattmeter</link>
+        <description>Wattmeter auto-update feed</description>
+        <language>en</language>
+        <item>
+            <title>Wattmeter 0.1.1</title>
+            <pubDate>Tue, 12 May 2026 18:21:29 +0300</pubDate>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<p>See <a href="https://github.com/emreisik95/wattmeter/releases/tag/v0.1.1">release notes</a>.</p>]]></description>
+            <enclosure
+                url="https://github.com/emreisik95/wattmeter/releases/download/v0.1.1/Wattmeter.dmg"
+                sparkle:edSignature="eEL9wlj0Q62rX3gZwBnh+bhihUCuR1wv/Ay1vUSCjR+nWlGBdpMcatkIfpTdyQYqT5wJFz2PAUqjt5DPyeazCw=="
+                length="2409885"
+                type="application/octet-stream" />
+        </item>
+    </channel>
+</rss>
