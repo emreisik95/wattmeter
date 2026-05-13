@@ -22,18 +22,21 @@ rm -rf "$FRAMEWORKS/Sparkle.framework"
 cp -R "$SPARKLE_SRC" "$FRAMEWORKS/Sparkle.framework"
 
 # Refresh resources
+mkdir -p "$APP/Contents/Resources"
 if [[ -f AppIcon.icns ]]; then
-    mkdir -p "$APP/Contents/Resources"
     cp -f AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 fi
 
-# Ship the SPM resource bundle (Bundle.module — contains pricing.json etc.)
-SPM_BUNDLE=".build/release/Wattmeter_Wattmeter.bundle"
-if [[ -d "$SPM_BUNDLE" ]]; then
-    mkdir -p "$APP/Contents/Resources"
-    rm -rf "$APP/Contents/Resources/Wattmeter_Wattmeter.bundle"
-    cp -R "$SPM_BUNDLE" "$APP/Contents/Resources/Wattmeter_Wattmeter.bundle"
+# pricing.json — loaded by PricingLoader via Bundle.main.
+# Copied directly to Contents/Resources/ so it works in installed .app
+# (avoids SPM's Bundle.module accessor which expects a bundle layout that
+# doesn't survive being wrapped in a .app).
+if [[ -f Sources/Wattmeter/Resources/pricing.json ]]; then
+    cp -f Sources/Wattmeter/Resources/pricing.json "$APP/Contents/Resources/pricing.json"
 fi
+
+# Drop any stale SPM resource bundle from previous builds.
+rm -rf "$APP/Contents/Resources/Wattmeter_Wattmeter.bundle" "$APP/Wattmeter_Wattmeter.bundle"
 
 # Strip symbols from final binary for smaller distribution
 strip -x -S "$BIN" 2>/dev/null || true

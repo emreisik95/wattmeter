@@ -8,11 +8,13 @@ Wattmeter.app/Contents/MacOS/Wattmeter
 Wattmeter.app/Contents/_CodeSignature/
 Wattmeter.app/Contents/Frameworks/
 Wattmeter.app/Contents/Resources/Wattmeter_Wattmeter.bundle/
+Wattmeter.app/Contents/Resources/pricing.json
 Wattmeter.dmg
 *.zip
 AppIcon.icns.bak
 dmg_bg.orig.png
 .claude/
+analytics/
 
 # Raycast extension (separate npm pkg)
 raycast/wattmeter/node_modules/

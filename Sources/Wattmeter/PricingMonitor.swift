@@ -64,7 +64,7 @@ enum PricingLoader {
     /// matching `Pricing.opus/sonnet/haiku` constants if the resource is
     /// missing (e.g. when running `swift test` outside the app bundle).
     static func loadBundledSeed() -> PricingDocument {
-        if let url = Bundle.module.url(forResource: "pricing", withExtension: "json"),
+        if let url = Bundle.main.url(forResource: "pricing", withExtension: "json"),
            let data = try? Data(contentsOf: url),
            let doc = try? JSONDecoder().decode(PricingDocument.self, from: data) {
             return doc
