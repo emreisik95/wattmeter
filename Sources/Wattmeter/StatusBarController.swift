@@ -55,7 +55,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
         )
         popover.contentViewController = host
         popover.behavior = .applicationDefined
-        popover.contentSize = NSSize(width: 820, height: 620)
+        popover.contentSize = NSSize(width: 1020, height: 720)
         popover.delegate = self
 
         if let button = statusItem.button {

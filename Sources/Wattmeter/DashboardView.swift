@@ -158,9 +158,9 @@ struct DashboardView: View {
         VStack(spacing: 10) {
             HStack(spacing: 10) {
                 Image(systemName: "brain.head.profile")
-                    .font(.title3)
+                    .font(.title2)
                     .foregroundStyle(Theme.accent)
-                Text("Wattmeter").font(.title3).bold()
+                Text("Wattmeter").font(.title2).bold()
                 DashboardChips()
                 Spacer()
                 if tab != .limits {
@@ -193,10 +193,10 @@ struct DashboardView: View {
             }
             if tab != .limits {
                 HStack {
-                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary).font(.caption)
+                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary).font(.callout)
                     TextField("Filter by model, project, or session…", text: $filterText)
                         .textFieldStyle(.plain)
-                        .font(.caption)
+                        .font(.callout)
                     if !filterText.isEmpty {
                         Button { filterText = "" } label: {
                             Image(systemName: "xmark.circle.fill")
@@ -222,8 +222,11 @@ struct DashboardView: View {
                     tab = t
                 } label: {
                     HStack(spacing: 6) {
-                        Image(systemName: t.icon).font(.caption)
-                        Text(t.rawValue).font(.caption).bold()
+                        Image(systemName: t.icon).font(.callout)
+                        Text(t.rawValue)
+                            .font(.callout).bold()
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                     }
                     .padding(.horizontal, 11)
                     .padding(.vertical, 6)
@@ -244,7 +247,7 @@ struct DashboardView: View {
                     showSettings = true
                 } label: {
                     Label("Not connected", systemImage: "link.badge.plus")
-                        .font(.caption2)
+                        .font(.subheadline)
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(.orange)
@@ -256,13 +259,15 @@ struct DashboardView: View {
         let color: Color = l.exceeded ? .red : (l.nearing ? .orange : .green)
         let label = l.kind == .fiveHour ? "5h" : "7d"
         return HStack(spacing: 4) {
-            Image(systemName: l.kind.icon).font(.caption2)
+            Image(systemName: l.kind.icon).font(.subheadline)
             Text("\(label) \(limits.percentStyle.format(l.percentage))")
-                .font(.caption2).bold().monospacedDigit()
+                .font(.subheadline).bold().monospacedDigit()
             if let r = l.resetsAt {
-                Text("· \(resetShort(r, kind: l.kind))").font(.caption2).foregroundStyle(.secondary)
+                Text("· \(resetShort(r, kind: l.kind))").font(.subheadline).foregroundStyle(.secondary)
             }
         }
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
         .padding(.horizontal, 7)
         .padding(.vertical, 3)
         .background(color.opacity(0.15), in: Capsule())
@@ -311,29 +316,29 @@ struct DashboardView: View {
                         .opacity(0.85)
                         .modifier(PulseModifier())
                     Text("Updating…")
-                        .font(.caption2).foregroundStyle(.secondary)
+                        .font(.subheadline).foregroundStyle(.secondary)
                 } else {
                     Text(store.lastRefresh.map { "Updated \(rel($0))" } ?? "Loading…")
-                        .font(.caption2).foregroundStyle(.secondary)
+                        .font(.subheadline).foregroundStyle(.secondary)
                 }
             }
             Spacer()
             if !rangeFiltered.isEmpty {
                 Text("\(searchFiltered.count) of \(rangeFiltered.count) requests")
-                    .font(.caption2).foregroundStyle(.secondary)
+                    .font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
             Button {
                 Export.saveCSV(entries: searchFiltered)
             } label: {
                 Label("Export", systemImage: "square.and.arrow.up")
-                    .font(.caption2)
+                    .font(.subheadline)
             }
             .buttonStyle(.borderless)
             .foregroundStyle(.secondary)
             Button("Quit") { NSApp.terminate(nil) }
                 .buttonStyle(.borderless)
-                .font(.caption2)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 14)
@@ -437,17 +442,17 @@ private struct TopRequestRow: View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(Aggregator.shortModel(entry.model)).font(.caption).bold()
+                    Text(Aggregator.shortModel(entry.model)).font(.callout).bold()
                     Text("·").foregroundStyle(.tertiary)
-                    Text(entry.project).font(.caption).lineLimit(1).truncationMode(.middle)
+                    Text(entry.project).font(.callout).lineLimit(1).truncationMode(.middle)
                 }
                 Text(entry.timestamp.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption2).foregroundStyle(.secondary)
+                    .font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
-            Text("\(shortNum(entry.totalTokens)) tok").font(.caption2).foregroundStyle(.secondary).monospacedDigit()
+            Text("\(shortNum(entry.totalTokens)) tok").font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
             Text(String(format: "$%.3f", entry.cost))
-                .font(.callout).bold().monospacedDigit().foregroundStyle(Theme.accent)
+                .font(.title3).bold().monospacedDigit().foregroundStyle(Theme.accent)
             Button {
                 let pb = NSPasteboard.general
                 pb.clearContents()
@@ -483,7 +488,7 @@ private struct HeatmapView: View {
                     Color.clear.frame(width: labelW, height: 10)
                     ForEach(0..<24, id: \.self) { h in
                         Text(h % 6 == 0 ? "\(h)" : "")
-                            .font(.system(size: 8))
+                            .font(.system(size: 11))
                             .foregroundStyle(.tertiary)
                             .frame(width: cellW, alignment: .leading)
                     }
@@ -491,7 +496,7 @@ private struct HeatmapView: View {
                 ForEach(0..<7, id: \.self) { day in
                     HStack(spacing: 1) {
                         Text(dayLabel(start: start, offset: day))
-                            .font(.system(size: 9))
+                            .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                             .frame(width: labelW, alignment: .leading)
                         ForEach(0..<24, id: \.self) { hour in
@@ -660,22 +665,22 @@ private struct SessionRow: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: expanded ? "chevron.down" : "chevron.right")
-                .foregroundStyle(.secondary).font(.caption).frame(width: 14)
+                .foregroundStyle(.secondary).font(.callout).frame(width: 14)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(short(session.sessionId)).font(.callout).bold().monospaced()
+                    Text(short(session.sessionId)).font(.title3).bold().monospaced()
                     Text("·").foregroundStyle(.tertiary)
-                    Text(session.project).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                    Text(session.project).font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 }
                 HStack(spacing: 6) {
-                    Text("\(session.entryCount) requests").font(.caption2).foregroundStyle(.secondary)
+                    Text("\(session.entryCount) requests").font(.subheadline).foregroundStyle(.secondary)
                     Text("·").foregroundStyle(.tertiary)
-                    Text(shortNum(session.tokens) + " tok").font(.caption2).foregroundStyle(.secondary)
+                    Text(shortNum(session.tokens) + " tok").font(.subheadline).foregroundStyle(.secondary)
                     Text("·").foregroundStyle(.tertiary)
-                    Text(durationStr(session.duration)).font(.caption2).foregroundStyle(.secondary)
+                    Text(durationStr(session.duration)).font(.subheadline).foregroundStyle(.secondary)
                     Text("·").foregroundStyle(.tertiary)
                     Text(session.lastSeen.formatted(date: .abbreviated, time: .shortened))
-                        .font(.caption2).foregroundStyle(.tertiary)
+                        .font(.subheadline).foregroundStyle(.tertiary)
                 }
             }
             Spacer()
@@ -688,9 +693,9 @@ private struct SessionRow: View {
             .foregroundStyle(Theme.accent)
             .help("Replay session transcript")
             Text(String(format: "$%.2f", session.cost))
-                .font(.callout).bold().monospacedDigit().foregroundStyle(Theme.accent)
+                .font(.title3).bold().monospacedDigit().foregroundStyle(Theme.accent)
             Text(String(format: "%.0f%%", fraction * 100))
-                .font(.caption2).foregroundStyle(.secondary)
+                .font(.subheadline).foregroundStyle(.secondary)
                 .frame(width: 36, alignment: .trailing)
         }
         .padding(.vertical, 8)
@@ -718,11 +723,11 @@ private struct SessionDetail: View {
                 .sorted { $0.value.cost > $1.value.cost }
             ForEach(byModel, id: \.key) { (model, info) in
                 HStack {
-                    Text("• \(model)").font(.caption).monospacedDigit()
+                    Text("• \(model)").font(.callout).monospacedDigit()
                     Spacer()
-                    Text("\(info.n) reqs").font(.caption2).foregroundStyle(.secondary)
+                    Text("\(info.n) reqs").font(.subheadline).foregroundStyle(.secondary)
                     Text(String(format: "$%.3f", info.cost))
-                        .font(.caption).bold().monospacedDigit().foregroundStyle(Theme.accent)
+                        .font(.callout).bold().monospacedDigit().foregroundStyle(Theme.accent)
                 }
             }
         }
@@ -751,7 +756,7 @@ private struct LimitsTab: View {
                     ContextCard(percentage: limits.contextPercentage)
                     if let mod = limits.lastUpdated {
                         Text("Live data updated \(rel(mod))")
-                            .font(.caption2).foregroundStyle(.tertiary)
+                            .font(.subheadline).foregroundStyle(.tertiary)
                     }
                 }
 
@@ -761,7 +766,7 @@ private struct LimitsTab: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     Label("Cost in last 5h (from session logs)", systemImage: "clock.arrow.circlepath")
-                        .font(.caption).bold().foregroundStyle(.secondary)
+                        .font(.callout).bold().foregroundStyle(.secondary)
                     let cal = Calendar.current
                     let nowDate = Date()
                     let start = cal.date(byAdding: .hour, value: -5, to: nowDate) ?? nowDate
@@ -797,7 +802,7 @@ private struct PlanPickerCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Plan (used for $-projection)", systemImage: "creditcard")
-                .font(.caption).bold().foregroundStyle(.secondary)
+                .font(.callout).bold().foregroundStyle(.secondary)
             Picker("Plan", selection: $settings.plan) {
                 ForEach(Plan.allCases) { p in Text(p.title).tag(p) }
             }
@@ -805,10 +810,10 @@ private struct PlanPickerCard: View {
             .labelsHidden()
             if settings.plan != .custom {
                 Text("Approximate caps: 5h $\(Int(settings.plan.fiveHourCeiling)) · 7d $\(Int(settings.plan.weeklyCeiling))")
-                    .font(.caption2).foregroundStyle(.tertiary)
+                    .font(.subheadline).foregroundStyle(.tertiary)
             } else {
                 Text("Custom plan — no projection ceiling assumed.")
-                    .font(.caption2).foregroundStyle(.tertiary)
+                    .font(.subheadline).foregroundStyle(.tertiary)
             }
         }
         .padding(12)
@@ -827,17 +832,17 @@ private struct DailyProjectionCard: View {
         let projected = today + burnPerSec * secsLeftToday
         VStack(alignment: .leading, spacing: 6) {
             Label("Today", systemImage: "sun.max.fill")
-                .font(.caption).bold().foregroundStyle(.secondary)
+                .font(.callout).bold().foregroundStyle(.secondary)
             HStack(alignment: .firstTextBaseline) {
                 Text(String(format: "$%.2f", today))
                     .font(.title2).bold().monospacedDigit().foregroundStyle(Theme.accent)
-                Text("so far").font(.caption2).foregroundStyle(.secondary)
+                Text("so far").font(.subheadline).foregroundStyle(.secondary)
                 Spacer()
                 Text(String(format: "Projected end-of-day: $%.2f", projected))
-                    .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                    .font(.callout).foregroundStyle(.secondary).monospacedDigit()
             }
             Text(String(format: "Burn rate (30m avg): $%.2f / hour", burnPerSec * 3600))
-                .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+                .font(.subheadline).foregroundStyle(.tertiary).monospacedDigit()
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -864,7 +869,7 @@ private struct NotConnectedCard: View {
                 Spacer()
             }
             Text("Wattmeter shows real 5-hour and weekly limits straight from Claude Code. Connect once — it patches your statusLine to write the JSON to `~/.claude/rate_limits.json` after every prompt.")
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.callout).foregroundStyle(.secondary)
             HStack {
                 Button {
                     let r = limits.installStatusLineIntegration()
@@ -882,7 +887,7 @@ private struct NotConnectedCard: View {
                 .buttonStyle(.borderedProminent)
                 Spacer()
                 if let m = msg {
-                    Text(m).font(.caption).foregroundStyle(.secondary)
+                    Text(m).font(.callout).foregroundStyle(.secondary)
                 }
             }
         }
@@ -918,7 +923,7 @@ private struct LimitCard: View {
                 Text(live.kind.title).font(.headline)
                 Spacer()
                 Text(limits.percentStyle.format(live.percentage))
-                    .font(.title3).bold().monospacedDigit()
+                    .font(.title2).bold().monospacedDigit()
                     .foregroundStyle(color)
             }
             GeometryReader { geo in
@@ -941,33 +946,33 @@ private struct LimitCard: View {
                 if let r = live.resetsAt {
                     TimelineView(.periodic(from: .now, by: 1)) { ctx in
                         Label(countdown(to: r, now: ctx.date), systemImage: "timer")
-                            .font(.caption2).foregroundStyle(.secondary).monospacedDigit()
+                            .font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
                     }
-                    Text("resets \(resetStr(r))").font(.caption2).foregroundStyle(.tertiary)
+                    Text("resets \(resetStr(r))").font(.subheadline).foregroundStyle(.tertiary)
                 } else {
-                    Text("No reset info").font(.caption2).foregroundStyle(.tertiary)
+                    Text("No reset info").font(.subheadline).foregroundStyle(.tertiary)
                 }
                 Spacer()
                 if forecast.willExceed {
                     Label("Will exceed", systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption2).foregroundStyle(.red)
+                        .font(.subheadline).foregroundStyle(.red)
                 } else if live.exceeded {
                     Label("Limit reached", systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption2).foregroundStyle(.red)
+                        .font(.subheadline).foregroundStyle(.red)
                 } else if live.nearing {
                     Label("Nearing limit", systemImage: "exclamationmark.circle")
-                        .font(.caption2).foregroundStyle(.orange)
+                        .font(.subheadline).foregroundStyle(.orange)
                 }
             }
             if forecast.costPerHour > 0 {
                 HStack(spacing: 12) {
                     Text(String(format: "Burn: $%.2f/h", forecast.costPerHour))
-                        .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+                        .font(.subheadline).foregroundStyle(.tertiary).monospacedDigit()
                     Text(String(format: "Projected: %d%%", Int(forecast.projectedFraction * 100)))
-                        .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+                        .font(.subheadline).foregroundStyle(.tertiary).monospacedDigit()
                     if let hitFull = forecast.hitFullAt {
                         Text("Hit 100% at \(resetStr(hitFull))")
-                            .font(.caption2).foregroundStyle(.orange).monospacedDigit()
+                            .font(.subheadline).foregroundStyle(.orange).monospacedDigit()
                     }
                 }
             }
@@ -995,7 +1000,7 @@ private struct ContextCard: View {
         HStack(spacing: 10) {
             Image(systemName: "text.alignleft").foregroundStyle(Theme.accent)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Context window").font(.callout).bold()
+                Text("Context window").font(.title3).bold()
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         RoundedRectangle(cornerRadius: 4)
@@ -1008,7 +1013,7 @@ private struct ContextCard: View {
                 .frame(height: 8)
             }
             Text(limits.percentStyle.format(percentage))
-                .font(.callout).bold().monospacedDigit().foregroundStyle(Theme.accent)
+                .font(.title3).bold().monospacedDigit().foregroundStyle(Theme.accent)
         }
         .padding(12)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
@@ -1038,7 +1043,7 @@ private struct FiveHourBucketsChart: View {
                 AxisGridLine()
                 AxisValueLabel {
                     if let d = v.as(Double.self) {
-                        Text("$\(String(format: "%.1f", d))").font(.caption2)
+                        Text("$\(String(format: "%.1f", d))").font(.subheadline)
                     }
                 }
             }
@@ -1092,10 +1097,10 @@ private struct UsageBarList: View {
                     let frac = totalCost > 0 ? item.cost / totalCost : 0
                     VStack(alignment: .leading, spacing: 3) {
                         HStack {
-                            Text(item.name).font(.caption).lineLimit(1).truncationMode(.middle)
+                            Text(item.name).font(.callout).lineLimit(1).truncationMode(.middle)
                             Spacer()
                             Text(String(format: "$%.2f", item.cost))
-                                .font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                                .font(.callout).monospacedDigit().foregroundStyle(.secondary)
                         }
                         GeometryReader { geo in
                             ZStack(alignment: .leading) {
@@ -1135,24 +1140,24 @@ private struct DetailRow: View {
             HStack(spacing: 10) {
                 Image(systemName: icon).foregroundStyle(iconColor).frame(width: 18)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(name).font(.callout).bold().lineLimit(1).truncationMode(.middle)
+                    Text(name).font(.title3).bold().lineLimit(1).truncationMode(.middle)
                     HStack(spacing: 6) {
-                        Text("\(entries.count) reqs").font(.caption2).foregroundStyle(.secondary)
+                        Text("\(entries.count) reqs").font(.subheadline).foregroundStyle(.secondary)
                         Text("·").foregroundStyle(.tertiary)
-                        Text("\(shortNum(tokens)) tok").font(.caption2).foregroundStyle(.secondary)
+                        Text("\(shortNum(tokens)) tok").font(.subheadline).foregroundStyle(.secondary)
                         if tokens > 0 {
                             Text("·").foregroundStyle(.tertiary)
                             Text(String(format: "cache hit %.0f%%", Double(cacheRead) / Double(tokens) * 100))
-                                .font(.caption2).foregroundStyle(.secondary)
+                                .font(.subheadline).foregroundStyle(.secondary)
                         }
                     }
                 }
                 Spacer()
                 Sparkline(entries: entries, color: iconColor).frame(width: 80, height: 24)
                 Text(String(format: "$%.2f", cost))
-                    .font(.callout).bold().monospacedDigit().foregroundStyle(iconColor)
+                    .font(.title3).bold().monospacedDigit().foregroundStyle(iconColor)
                 Text(String(format: "%.0f%%", fraction * 100))
-                    .font(.caption2).foregroundStyle(.secondary)
+                    .font(.subheadline).foregroundStyle(.secondary)
                     .frame(width: 36, alignment: .trailing)
             }
             GeometryReader { geo in
@@ -1206,8 +1211,8 @@ private struct StatCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
-            Text(value).font(.title3).bold().foregroundStyle(accent).monospacedDigit()
+            Text(title).font(.callout).foregroundStyle(.secondary)
+            Text(value).font(.title2).bold().foregroundStyle(accent).monospacedDigit()
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1254,7 +1259,7 @@ private struct EmptyHint: View {
             Spacer()
             VStack(spacing: 6) {
                 Image(systemName: "tray").font(.title2).foregroundStyle(.tertiary)
-                Text(text).font(.caption).foregroundStyle(.secondary)
+                Text(text).font(.callout).foregroundStyle(.secondary)
             }
             Spacer()
         }
@@ -1263,7 +1268,7 @@ private struct EmptyHint: View {
 
 private func sectionHeader(_ title: String, icon: String) -> some View {
     Label(title, systemImage: icon)
-        .font(.caption).bold()
+        .font(.callout).bold()
         .foregroundStyle(.secondary)
         .textCase(.uppercase)
 }
@@ -1314,7 +1319,7 @@ struct IntegrationSettingsView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Image(systemName: "gauge.with.dots.needle.67percent").foregroundStyle(Theme.accent)
-                Text("Wattmeter settings").font(.title3).bold()
+                Text("Wattmeter settings").font(.title2).bold()
                 Spacer()
             }
 
@@ -1322,7 +1327,7 @@ struct IntegrationSettingsView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Label("Percent display", systemImage: "percent")
-                    .font(.caption).bold().foregroundStyle(.secondary)
+                    .font(.callout).bold().foregroundStyle(.secondary)
                 Picker("", selection: $limits.percentStyle) {
                     ForEach(PercentStyle.allCases) { s in
                         Text(s.title).tag(s)
@@ -1331,12 +1336,12 @@ struct IntegrationSettingsView: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 Text("Preview: 5h \(limits.percentStyle.format(18)) · 7d \(limits.percentStyle.format(30))")
-                    .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+                    .font(.subheadline).foregroundStyle(.tertiary).monospacedDigit()
             }
 
             VStack(alignment: .leading, spacing: 6) {
                 Label("Tray display", systemImage: "menubar.rectangle")
-                    .font(.caption).bold().foregroundStyle(.secondary)
+                    .font(.callout).bold().foregroundStyle(.secondary)
                 Picker("", selection: $settings.trayDisplay) {
                     ForEach(TrayDisplay.allCases) { d in
                         Text(d.title).tag(d)
@@ -1345,27 +1350,27 @@ struct IntegrationSettingsView: View {
                 .pickerStyle(.menu)
                 .labelsHidden()
                 Text("Preview: \(settings.trayDisplay.preview)")
-                    .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
-                Toggle("Colorize tray on warning", isOn: $settings.colorizeTray).font(.caption)
+                    .font(.subheadline).foregroundStyle(.tertiary).monospacedDigit()
+                Toggle("Colorize tray on warning", isOn: $settings.colorizeTray).font(.callout)
             }
 
             VStack(alignment: .leading, spacing: 6) {
                 Label("Notifications", systemImage: "bell.fill")
-                    .font(.caption).bold().foregroundStyle(.secondary)
+                    .font(.callout).bold().foregroundStyle(.secondary)
                 Toggle("Notify on 50/80/100% thresholds", isOn: Binding(
                     get: { NotificationManager.shared.enabled },
                     set: { NotificationManager.shared.enabled = $0 }
-                )).font(.caption)
+                )).font(.callout)
                 Toggle("Sound on limit reached", isOn: Binding(
                     get: { NotificationManager.shared.soundOnExceed },
                     set: { NotificationManager.shared.soundOnExceed = $0 }
-                )).font(.caption)
+                )).font(.callout)
             }
 
             VStack(alignment: .leading, spacing: 6) {
                 Label("System", systemImage: "gearshape.fill")
-                    .font(.caption).bold().foregroundStyle(.secondary)
-                Toggle("Launch at login", isOn: $settings.launchAtLogin).font(.caption)
+                    .font(.callout).bold().foregroundStyle(.secondary)
+                Toggle("Launch at login", isOn: $settings.launchAtLogin).font(.callout)
             }
 
             HStack(spacing: 10) {
@@ -1405,7 +1410,7 @@ struct IntegrationSettingsView: View {
             }
 
             if let m = msg {
-                Text(m).font(.caption).foregroundStyle(isError ? .red : .secondary)
+                Text(m).font(.callout).foregroundStyle(isError ? .red : .secondary)
             }
         }
         .padding(20)
@@ -1418,11 +1423,11 @@ struct IntegrationSettingsView: View {
                 .fill(limits.isConnected ? Color.green : Color.orange)
                 .frame(width: 8, height: 8)
             Text(limits.isConnected ? "Connected — receiving live data" : (limits.fileMissing ? "No rate_limits.json yet" : "Waiting for data"))
-                .font(.caption).bold()
+                .font(.callout).bold()
             Spacer()
             if let d = limits.lastUpdated {
                 Text("Last: \(d.formatted(date: .omitted, time: .standard))")
-                    .font(.caption2).foregroundStyle(.secondary)
+                    .font(.subheadline).foregroundStyle(.secondary)
             }
         }
         .padding(10)
@@ -1445,7 +1450,7 @@ private struct OnboardingOverlay: View {
                     .font(.system(size: 48)).foregroundStyle(Theme.accent)
                 Text("Welcome to Wattmeter").font(.title2).bold()
                 Text("See your real 5-hour and weekly limits, cost, models, projects, and sessions — straight from Claude Code.")
-                    .font(.callout).foregroundStyle(.secondary)
+                    .font(.title3).foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                 VStack(alignment: .leading, spacing: 8) {
                     bullet("Live limits read from Claude statusLine", "gauge.with.dots.needle.67percent")
@@ -1476,7 +1481,7 @@ private struct OnboardingOverlay: View {
                 }
                 .frame(maxWidth: 320)
                 if let m = msg {
-                    Text(m).font(.caption).foregroundStyle(.secondary)
+                    Text(m).font(.callout).foregroundStyle(.secondary)
                 }
             }
             .padding(28)
@@ -1490,7 +1495,7 @@ private struct OnboardingOverlay: View {
     private func bullet(_ text: String, _ icon: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon).foregroundStyle(Theme.accent).frame(width: 22)
-            Text(text).font(.caption)
+            Text(text).font(.callout)
             Spacer()
         }
     }
