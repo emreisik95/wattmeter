@@ -560,6 +560,7 @@ private struct ModelsTab: View {
 
     private func modelIcon(_ m: String) -> String {
         let l = m.lowercased()
+        if l.contains("fable")  { return "book.fill" }
         if l.contains("opus")   { return "crown.fill" }
         if l.contains("sonnet") { return "music.note" }
         if l.contains("haiku")  { return "leaf.fill" }

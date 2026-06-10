@@ -76,6 +76,7 @@ enum PricingLoader {
         version: 1,
         updated: nil,
         models: [
+            "claude-fable-5":    .init(inputPerMTok: 10.0, outputPerMTok: 50.0),
             "claude-opus-4-7":   .init(inputPerMTok: 15.0, outputPerMTok: 75.0),
             "claude-sonnet-4-6": .init(inputPerMTok: 3.0,  outputPerMTok: 15.0),
             "claude-haiku-4-5":  .init(inputPerMTok: 0.80, outputPerMTok: 4.0)

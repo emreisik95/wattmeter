@@ -64,6 +64,7 @@ final class PricingTable: @unchecked Sendable {
     }
 
     private func family(of model: String) -> String? {
+        if model.contains("fable") { return "fable" }
         if model.contains("opus") { return "opus" }
         if model.contains("haiku") { return "haiku" }
         if model.contains("sonnet") { return "sonnet" }
@@ -74,6 +75,7 @@ final class PricingTable: @unchecked Sendable {
 enum Pricing {
     // Static fallbacks retained for backward-compat and as boot defaults when
     // bundled Resources/pricing.json fails to load.
+    static let fable   = ModelPricing(inputPerMTok: 10.0, outputPerMTok: 50.0)
     static let opus    = ModelPricing(inputPerMTok: 15.0, outputPerMTok: 75.0)
     static let sonnet  = ModelPricing(inputPerMTok: 3.0,  outputPerMTok: 15.0)
     static let haiku   = ModelPricing(inputPerMTok: 0.80, outputPerMTok: 4.0)
@@ -84,6 +86,7 @@ enum Pricing {
     static func price(for model: String) -> ModelPricing {
         if let live = PricingTable.shared.lookup(model) { return live }
         let m = model.lowercased()
+        if m.contains("fable")  { return fable }
         if m.contains("opus")   { return opus }
         if m.contains("haiku")  { return haiku }
         if m.contains("sonnet") { return sonnet }

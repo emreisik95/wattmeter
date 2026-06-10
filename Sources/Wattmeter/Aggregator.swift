@@ -154,7 +154,8 @@ enum Aggregator {
     static func shortModel(_ m: String) -> String {
         let l = m.lowercased()
         let family: String
-        if l.contains("opus") { family = "opus" }
+        if l.contains("fable") { family = "fable" }
+        else if l.contains("opus") { family = "opus" }
         else if l.contains("haiku") { family = "haiku" }
         else if l.contains("sonnet") { family = "sonnet" }
         else { return m }
@@ -162,6 +163,9 @@ enum Aggregator {
         let parts = stripped.split(separator: "-")
         if parts.count >= 3, Int(parts[1]) != nil, Int(parts[2]) != nil {
             return "\(family)-\(parts[1]).\(parts[2])"
+        }
+        if parts.count >= 2, Int(parts[1]) != nil {
+            return "\(family)-\(parts[1])"
         }
         return family
     }

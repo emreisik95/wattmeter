@@ -86,6 +86,35 @@ final class PricingMonitorTests: XCTestCase {
         XCTAssertEqual(c, 300.0, accuracy: 0.0001)
     }
 
+    func test_fable_pricing_exact_and_bracket_variant() {
+        PricingTable.shared.setTable(PricingLoader.defaultDocument.rows)
+        defer { PricingTable.shared.setTable(PricingLoader.defaultDocument.rows) }
+
+        let exact = PricingTable.shared.lookup("claude-fable-5")
+        XCTAssertEqual(exact?.inputPerMTok, 10.0)
+        XCTAssertEqual(exact?.outputPerMTok, 50.0)
+
+        // Runtime model ids can carry a context-window suffix; family
+        // fallback must still resolve them.
+        let variant = PricingTable.shared.lookup("claude-fable-5[1m]")
+        XCTAssertEqual(variant?.inputPerMTok, 10.0)
+        XCTAssertEqual(variant?.outputPerMTok, 50.0)
+
+        // Cache rates derive from input price.
+        XCTAssertEqual(exact?.cacheReadPerMTok ?? 0, 1.0, accuracy: 0.0001)
+        XCTAssertEqual(exact?.cacheWrite5mPerMTok ?? 0, 12.5, accuracy: 0.0001)
+        XCTAssertEqual(exact?.cacheWrite1hPerMTok ?? 0, 20.0, accuracy: 0.0001)
+    }
+
+    func test_fable_static_fallback_when_table_empty() {
+        PricingTable.shared.setTable([])
+        defer { PricingTable.shared.setTable(PricingLoader.defaultDocument.rows) }
+
+        let p = Pricing.price(for: "claude-fable-5")
+        XCTAssertEqual(p.inputPerMTok, 10.0)
+        XCTAssertEqual(p.outputPerMTok, 50.0)
+    }
+
     func test_engine_refresh_with_mock_fetcher_emits_changes() async {
         let seed = PricingDocument(version: 1, updated: nil, models: [
             "claude-opus-4-7": .init(inputPerMTok: 15.0, outputPerMTok: 75.0)
