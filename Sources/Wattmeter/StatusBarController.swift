@@ -140,9 +140,13 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
         }()
 
         var text = ""
-        if connected {
+        if display == .burnRate {
+            // Burn rate comes from session logs — no limits connection needed.
+            let perHour = Forecasting.burnRate(entries: store.entries, lookbackSeconds: 1800) * 3600
+            text = String(format: "$%.2f/h", perHour)
+        } else if connected {
             switch display {
-            case .iconOnly: text = ""
+            case .iconOnly, .burnRate: text = ""
             case .iconPct, .pctOnly:
                 text = style.format(l.percentage)
             case .dual:

@@ -55,6 +55,11 @@ enum DashTab: String, CaseIterable, Identifiable {
         case .limits:   return "7"
         }
     }
+
+    var helpText: String {
+        let n = (DashTab.allCases.firstIndex(of: self) ?? 0) + 1
+        return "\(rawValue) (⌘\(n))"
+    }
 }
 
 // MARK: - Dashboard
@@ -63,6 +68,7 @@ struct DashboardView: View {
     @EnvironmentObject var store: UsageStore
     @EnvironmentObject var limits: LimitsConfig
     @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var pricing: PricingMonitor
     @State private var range: TimeRange = .week
     @State private var tab: DashTab = .overview
     @State private var showSettings = false
@@ -118,6 +124,12 @@ struct DashboardView: View {
             VStack(spacing: 0) {
                 header
                 Divider()
+                if !pricing.changes.isEmpty {
+                    PricingChangeBanner(changes: pricing.changes) {
+                        pricing.engine?.dismissChanges()
+                    }
+                    Divider()
+                }
                 content
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 Divider()
@@ -237,6 +249,7 @@ struct DashboardView: View {
                     .foregroundStyle(tab == t ? Theme.accent : Color.secondary)
                 }
                 .buttonStyle(.plain)
+                .help(t.helpText)
             }
             Spacer()
             if limits.isConnected {
@@ -284,11 +297,12 @@ struct DashboardView: View {
             summary: cachedSummary,
             byModel: cachedByModel,
             byProject: cachedByProject,
-            topRequests: cachedTopRequests
+            topRequests: cachedTopRequests,
+            hourly: range == .today
         )
-        case .models:   ModelsTab(entries: searchFiltered, byModel: cachedByModel)
-        case .projects: ProjectsTab(entries: searchFiltered, byProject: cachedByProject)
-        case .sessions: SessionsTab(entries: searchFiltered, bySession: cachedBySession)
+        case .models:   ModelsTab(entries: searchFiltered, byModel: cachedByModel, storeEmpty: store.entries.isEmpty)
+        case .projects: ProjectsTab(entries: searchFiltered, byProject: cachedByProject, storeEmpty: store.entries.isEmpty)
+        case .sessions: SessionsTab(entries: searchFiltered, bySession: cachedBySession, storeEmpty: store.entries.isEmpty)
         case .tools:    ToolBreakdownView()
         case .insights: InsightsView()
         case .limits:   LimitsTab(entries: store.entries)
@@ -352,6 +366,48 @@ struct DashboardView: View {
     }
 }
 
+// MARK: - Pricing change banner
+
+/// Shown when the pricing monitor detects upstream per-MTok price changes.
+/// Costs shown elsewhere are already repriced; this just surfaces the event.
+private struct PricingChangeBanner: View {
+    let changes: [PricingChange]
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "tag.fill").foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Model pricing changed").font(.callout).bold()
+                Text(detail)
+                    .font(.subheadline).foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Spacer()
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("Dismiss")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.orange.opacity(0.08))
+    }
+
+    private var detail: String {
+        changes.prefix(3).map { c in
+            String(format: "%@: in $%.2f→$%.2f · out $%.2f→$%.2f",
+                   Aggregator.shortModel(c.model),
+                   c.oldInputUSD, c.newInputUSD, c.oldOutputUSD, c.newOutputUSD)
+        }
+        .joined(separator: "  ·  ")
+        + (changes.count > 3 ? "  ·  +\(changes.count - 3) more" : "")
+    }
+}
+
 // MARK: - Header chips
 
 /// Profile selector + service-status dot, rendered next to the title in the
@@ -376,6 +432,7 @@ private struct OverviewTab: View {
     let byModel: [Aggregator.ModelSlice]
     let byProject: [Aggregator.ProjectSlice]
     let topRequests: [UsageEntry]
+    let hourly: Bool
 
     var body: some View {
         let s = summary
@@ -384,11 +441,11 @@ private struct OverviewTab: View {
             VStack(alignment: .leading, spacing: 14) {
                 StandupCard(standup: standup, compact: true)
                 summaryRow(s)
-                Section(header: sectionHeader("Cost over time", icon: "chart.line.uptrend.xyaxis")) {
-                    CostOverTimeChart(entries: entries).frame(height: 160)
+                Section(header: sectionHeader(hourly ? "Cost over time (hourly)" : "Cost over time", icon: "chart.line.uptrend.xyaxis")) {
+                    CostOverTimeChart(entries: entries, hourly: hourly).frame(height: 160)
                 }
                 Section(header: sectionHeader("Activity heatmap (7d × 24h)", icon: "square.grid.3x3.fill")) {
-                    HeatmapView(entries: all).frame(height: 130)
+                    HeatmapView(entries: all).frame(height: 150)
                 }
                 HStack(alignment: .top, spacing: 14) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -423,15 +480,20 @@ private struct OverviewTab: View {
 
     private func summaryRow(_ s: Aggregator.Summary) -> some View {
         HStack(spacing: 8) {
-            StatCard(title: "Cost", value: fmt(s.cost), accent: Theme.accent)
+            StatCard(title: "Cost", value: usd(s.cost), accent: Theme.accent)
+                .help("API-equivalent cost of all requests in range")
             StatCard(title: "Input", value: shortNum(s.inputTokens), accent: .primary)
+                .help("Fresh input tokens (not served from cache)")
             StatCard(title: "Output", value: shortNum(s.outputTokens), accent: .primary)
-            StatCard(title: "Cache W", value: shortNum(s.cacheWriteTokens), accent: .primary)
-            StatCard(title: "Cache R", value: shortNum(s.cacheReadTokens), accent: .primary)
+                .help("Tokens generated by the model")
+            StatCard(title: "Cache write", value: shortNum(s.cacheWriteTokens), accent: .primary)
+                .help("Tokens written into the prompt cache (billed at a premium)")
+            StatCard(title: "Cache read", value: shortNum(s.cacheReadTokens), accent: .primary)
+                .help("Tokens served from the prompt cache (billed at ~10% of input)")
+            StatCard(title: "Cache savings", value: usd(s.cacheSavings), accent: .green)
+                .help("What cache reads would have cost as fresh input, minus what they actually cost")
         }
     }
-
-    private func fmt(_ d: Double) -> String { String(format: "$%.2f", d) }
 }
 
 private struct TopRequestRow: View {
@@ -509,6 +571,20 @@ private struct HeatmapView: View {
                         }
                     }
                 }
+                HStack(spacing: 4) {
+                    Color.clear.frame(width: labelW, height: 10)
+                    Text("Less").font(.system(size: 10)).foregroundStyle(.tertiary)
+                    ForEach([0.0, 0.25, 0.5, 0.75, 1.0], id: \.self) { i in
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(Theme.heat(i))
+                            .frame(width: 14, height: 8)
+                    }
+                    Text("More").font(.system(size: 10)).foregroundStyle(.tertiary)
+                    Spacer()
+                    Text(String(format: "Peak hour: $%.2f", maxVal))
+                        .font(.system(size: 10)).foregroundStyle(.tertiary).monospacedDigit()
+                }
+                .padding(.top, 3)
             }
         }
     }
@@ -532,6 +608,7 @@ private struct HeatmapView: View {
 private struct ModelsTab: View {
     let entries: [UsageEntry]
     let byModel: [Aggregator.ModelSlice]
+    let storeEmpty: Bool
 
     var body: some View {
         let data = byModel
@@ -539,8 +616,11 @@ private struct ModelsTab: View {
         ScrollView {
             VStack(spacing: 0) {
                 if data.isEmpty {
-                    EmptyHint(text: "No model data in range").padding(40)
+                    EmptyHint(text: storeEmpty ? noLogsHint : "No model data in range — try a wider range or clear the filter")
+                        .padding(40)
                 } else {
+                    WhatIfCard(entries: entries)
+                        .padding(.bottom, 10)
                     ForEach(data) { d in
                         DetailRow(
                             name: d.model,
@@ -573,11 +653,60 @@ private struct ModelsTab: View {
     }
 }
 
+// MARK: - What-if comparison
+
+/// "What if all this ran on one model?" — reprices the in-range Claude token
+/// mix at each candidate model's current pricing and compares to actual cost.
+private struct WhatIfCard: View {
+    let entries: [UsageEntry]
+
+    private static let candidates: [(label: String, model: String)] = [
+        ("Fable 5",    "claude-fable-5"),
+        ("Opus 4.7",   "claude-opus-4-7"),
+        ("Sonnet 4.6", "claude-sonnet-4-6"),
+        ("Haiku 4.5",  "claude-haiku-4-5"),
+    ]
+
+    var body: some View {
+        let claude = entries.filter { $0.providerOrClaude == ProviderID.claude }
+        let actual = claude.reduce(0.0) { $0 + $1.cost }
+        if claude.isEmpty || actual <= 0 {
+            EmptyView()
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                sectionHeader("What if — same tokens, one model", icon: "arrow.left.arrow.right")
+                HStack(spacing: 8) {
+                    ForEach(Self.candidates, id: \.model) { c in
+                        let cost = Aggregator.whatIfCost(claude, pricing: Pricing.price(for: c.model))
+                        let delta = (cost - actual) / actual * 100
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(c.label).font(.subheadline).foregroundStyle(.secondary)
+                            Text(usd(cost)).font(.callout).bold().monospacedDigit()
+                            Text(String(format: "%+.0f%%", delta))
+                                .font(.subheadline).bold().monospacedDigit()
+                                .foregroundStyle(delta > 0 ? .red : .green)
+                        }
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+                Text("Hypothetical: your in-range Claude token mix billed entirely at each model's current pricing, vs. \(usd(actual)) actual.")
+                    .font(.subheadline).foregroundStyle(.tertiary)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+}
+
+fileprivate let noLogsHint = "No usage logs found — set your Claude directory in Settings (⌘,), or send a prompt in Claude Code first"
+
 // MARK: - Projects tab
 
 private struct ProjectsTab: View {
     let entries: [UsageEntry]
     let byProject: [Aggregator.ProjectSlice]
+    let storeEmpty: Bool
 
     var body: some View {
         let data = byProject
@@ -585,7 +714,8 @@ private struct ProjectsTab: View {
         ScrollView {
             VStack(spacing: 0) {
                 if data.isEmpty {
-                    EmptyHint(text: "No project data in range").padding(40)
+                    EmptyHint(text: storeEmpty ? noLogsHint : "No project data in range — try a wider range or clear the filter")
+                        .padding(40)
                 } else {
                     ForEach(data) { d in
                         DetailRow(
@@ -610,6 +740,7 @@ private struct ProjectsTab: View {
 private struct SessionsTab: View {
     let entries: [UsageEntry]
     let bySession: [Aggregator.SessionSlice]
+    let storeEmpty: Bool
     @State private var expanded: String?
     @State private var replaySessionId: String?
 
@@ -619,7 +750,8 @@ private struct SessionsTab: View {
         ScrollView {
             VStack(spacing: 0) {
                 if sessions.isEmpty {
-                    EmptyHint(text: "No sessions in range").padding(40)
+                    EmptyHint(text: storeEmpty ? noLogsHint : "No sessions in range — try a wider range or clear the filter")
+                        .padding(40)
                 } else {
                     ForEach(sessions) { s in
                         VStack(alignment: .leading, spacing: 4) {
@@ -662,6 +794,7 @@ private struct SessionRow: View {
     let fraction: Double
     let expanded: Bool
     let onReplay: () -> Void
+    @State private var title: String?
 
     var body: some View {
         HStack(spacing: 10) {
@@ -669,7 +802,14 @@ private struct SessionRow: View {
                 .foregroundStyle(.secondary).font(.callout).frame(width: 14)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(short(session.sessionId)).font(.title3).bold().monospaced()
+                    if let title {
+                        Text(title).font(.callout).bold().lineLimit(1).truncationMode(.tail)
+                            .help(title)
+                        Text("·").foregroundStyle(.tertiary)
+                        Text(short(session.sessionId)).font(.subheadline).foregroundStyle(.secondary).monospaced()
+                    } else {
+                        Text(short(session.sessionId)).font(.title3).bold().monospaced()
+                    }
                     Text("·").foregroundStyle(.tertiary)
                     Text(session.project).font(.callout).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 }
@@ -701,6 +841,13 @@ private struct SessionRow: View {
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
+        .task(id: session.sessionId) {
+            let sid = session.sessionId
+            let dir = ProfileManager.shared.activeClaudeDir
+            title = await Task.detached(priority: .utility) {
+                SessionTitles.resolve(sessionId: sid, claudeDir: dir)
+            }.value
+        }
     }
 
     private func short(_ s: String) -> String {
@@ -943,6 +1090,9 @@ private struct LimitCard: View {
                 }
             }
             .frame(height: 10)
+            .help(forecast.projectedFraction > live.fraction
+                  ? "Solid bar: used now. Faint bar: projected usage at reset, at the current burn rate."
+                  : "Usage within this window")
             HStack(spacing: 12) {
                 if let r = live.resetsAt {
                     TimelineView(.periodic(from: .now, by: 1)) { ctx in
@@ -1223,21 +1373,33 @@ private struct StatCard: View {
 
 private struct CostOverTimeChart: View {
     let entries: [UsageEntry]
+    let hourly: Bool
 
     var body: some View {
-        let buckets = Aggregator.byDay(entries)
-        let stride = max(1, buckets.count / 6)
+        let buckets = Aggregator.byBucketModel(entries, hourly: hourly)
+        let models = Array(Set(buckets.map(\.model))).sorted()
+        let dayCount = Set(buckets.map(\.date)).count
+        let stride = max(1, dayCount / 6)
         Chart(buckets) { b in
             BarMark(
-                x: .value("Day", b.date, unit: .day),
+                x: .value(hourly ? "Hour" : "Day", b.date, unit: hourly ? .hour : .day),
                 y: .value("Cost", b.cost)
             )
-            .foregroundStyle(Theme.accent.gradient)
+            .foregroundStyle(by: .value("Model", b.model))
         }
+        .chartForegroundStyleScale(domain: models, range: models.map(modelFamilyColor))
+        .chartLegend(position: .top, alignment: .leading, spacing: 6)
         .chartXAxis {
-            AxisMarks(values: .stride(by: .day, count: stride)) { _ in
-                AxisGridLine()
-                AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+            if hourly {
+                AxisMarks(values: .stride(by: .hour, count: 3)) { _ in
+                    AxisGridLine()
+                    AxisValueLabel(format: .dateTime.hour())
+                }
+            } else {
+                AxisMarks(values: .stride(by: .day, count: stride)) { _ in
+                    AxisGridLine()
+                    AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                }
             }
         }
         .chartYAxis {
@@ -1251,6 +1413,16 @@ private struct CostOverTimeChart: View {
             }
         }
     }
+}
+
+/// Stable per-family colors so the stacked chart reads the same across ranges.
+fileprivate func modelFamilyColor(_ model: String) -> Color {
+    let l = model.lowercased()
+    if l.contains("fable")  { return .purple }
+    if l.contains("opus")   { return .orange }
+    if l.contains("sonnet") { return .blue }
+    if l.contains("haiku")  { return .green }
+    return .gray
 }
 
 private struct EmptyHint: View {
@@ -1278,6 +1450,12 @@ fileprivate func shortNum(_ n: Int) -> String {
     if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
     if n >= 1_000 { return String(format: "%.1fk", Double(n) / 1_000) }
     return "\(n)"
+}
+
+/// Dollar formatter that never rounds small-but-nonzero amounts to "$0.00".
+fileprivate func usd(_ v: Double) -> String {
+    if v > 0 && v < 0.01 { return "<$0.01" }
+    return String(format: "$%.2f", v)
 }
 
 private func resetStr(_ d: Date) -> String {

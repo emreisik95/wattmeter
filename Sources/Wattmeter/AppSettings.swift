@@ -7,6 +7,7 @@ enum TrayDisplay: String, CaseIterable, Identifiable {
     case pctOnly
     case dual
     case pctReset
+    case burnRate
     var id: String { rawValue }
 
     var title: String {
@@ -16,6 +17,7 @@ enum TrayDisplay: String, CaseIterable, Identifiable {
         case .pctOnly:  return "5h % only"
         case .dual:     return "5h + 7d %"
         case .pctReset: return "5h % + reset time"
+        case .burnRate: return "Burn rate ($/h)"
         }
     }
 
@@ -26,6 +28,7 @@ enum TrayDisplay: String, CaseIterable, Identifiable {
         case .pctOnly:  return "%18"
         case .dual:     return "5h %18 · 7d %30"
         case .pctReset: return "%18 · 16:30"
+        case .burnRate: return "🧠 $2.40/h"
         }
     }
 }

@@ -93,6 +93,32 @@ enum Pricing {
         return unknown
     }
 
+    /// Recompute cost from an entry's stored token counts using the live table.
+    /// Entries persist their parse-time cost; this derives the current one.
+    static func cost(entry e: UsageEntry) -> Double {
+        let p = price(for: e.model)
+        let s = 1.0 / 1_000_000.0
+        return Double(e.inputTokens) * p.inputPerMTok * s
+             + Double(e.outputTokens) * p.outputPerMTok * s
+             + Double(e.cacheWrite5m) * p.cacheWrite5mPerMTok * s
+             + Double(e.cacheWrite1h) * p.cacheWrite1hPerMTok * s
+             + Double(e.cacheRead) * p.cacheReadPerMTok * s
+    }
+
+    /// Reprice Claude entries against the current pricing table. Costs are
+    /// baked in at parse time and survive in the snapshot cache, so entries
+    /// parsed under an older pricing table (e.g. before a model existed in
+    /// it) would otherwise keep their stale cost forever. Entries from other
+    /// providers keep their provider-computed cost.
+    static func repriced(_ entries: [UsageEntry]) -> [UsageEntry] {
+        entries.map { e in
+            guard e.providerOrClaude == ProviderID.claude else { return e }
+            var copy = e
+            copy.cost = cost(entry: e)
+            return copy
+        }
+    }
+
     /// PRESERVED signature — Parser.swift:98 calls this unchanged.
     static func cost(usage: TranscriptUsage, model: String) -> Double {
         let p = price(for: model)

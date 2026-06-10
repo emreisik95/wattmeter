@@ -38,7 +38,7 @@ final class UsageStore: ObservableObject {
             let entries: [UsageEntry]
         }
         guard let snap = try? decoder.decode(Snapshot.self, from: data) else { return }
-        self.entries = snap.entries
+        self.entries = Pricing.repriced(snap.entries)
         self.lastRefresh = snap.savedAt
     }
 
@@ -125,11 +125,11 @@ final class UsageStore: ObservableObject {
         // Wait for secondary providers and produce the final merged list.
         let secondaryEntries = await secondaryTask.value
         let claudeAll = preExistingClaude + newClaudeEntries
-        let finalList = ProviderMerge.merge([claudeAll, secondaryEntries])
+        // Reprice on every refresh: pre-existing entries carry parse-time
+        // costs that go stale when the pricing table gains or changes models.
+        let finalList = Pricing.repriced(ProviderMerge.merge([claudeAll, secondaryEntries]))
 
-        if pendingUIUpdate || finalList.count != entries.count || !secondaryEntries.isEmpty {
-            entries = finalList
-        }
+        entries = finalList
 
         lastRefresh = Date()
         let entriesForWidget = entries

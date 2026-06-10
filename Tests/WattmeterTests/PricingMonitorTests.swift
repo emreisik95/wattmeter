@@ -106,6 +106,33 @@ final class PricingMonitorTests: XCTestCase {
         XCTAssertEqual(exact?.cacheWrite1hPerMTok ?? 0, 20.0, accuracy: 0.0001)
     }
 
+    func test_repriced_updates_claude_entry_costs() {
+        PricingTable.shared.setTable(PricingLoader.defaultDocument.rows)
+        defer { PricingTable.shared.setTable(PricingLoader.defaultDocument.rows) }
+
+        // Entry persisted under old pricing (fable unknown → $0 cost).
+        let stale = UsageEntry(
+            id: "t1", timestamp: Date(), model: "claude-fable-5",
+            project: "p", sessionId: "s",
+            inputTokens: 1_000_000, outputTokens: 0,
+            cacheWrite5m: 0, cacheWrite1h: 0, cacheRead: 1_000_000,
+            cost: 0, provider: nil
+        )
+        // Non-Claude entries keep their original cost untouched.
+        let other = UsageEntry(
+            id: "t2", timestamp: Date(), model: "gpt-x",
+            project: "p", sessionId: "s",
+            inputTokens: 1_000_000, outputTokens: 0,
+            cacheWrite5m: 0, cacheWrite1h: 0, cacheRead: 0,
+            cost: 1.23, provider: "codex"
+        )
+
+        let out = Pricing.repriced([stale, other])
+        // 1M input @ $10 + 1M cache read @ $1 = $11
+        XCTAssertEqual(out[0].cost, 11.0, accuracy: 0.0001)
+        XCTAssertEqual(out[1].cost, 1.23, accuracy: 0.0001)
+    }
+
     func test_fable_static_fallback_when_table_empty() {
         PricingTable.shared.setTable([])
         defer { PricingTable.shared.setTable(PricingLoader.defaultDocument.rows) }

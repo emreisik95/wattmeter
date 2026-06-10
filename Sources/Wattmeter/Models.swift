@@ -40,7 +40,7 @@ struct UsageEntry: Identifiable, Hashable, Codable {
     let cacheWrite5m: Int
     let cacheWrite1h: Int
     let cacheRead: Int
-    let cost: Double
+    var cost: Double
     var provider: String?
 
     var totalTokens: Int {

@@ -8,6 +8,9 @@ enum Aggregator {
         var cacheWriteTokens: Int = 0
         var cacheReadTokens: Int = 0
         var entryCount: Int = 0
+        /// What cache reads would have cost as fresh input minus what they
+        /// actually cost — i.e. money saved by prompt caching.
+        var cacheSavings: Double = 0
         var totalTokens: Int {
             inputTokens + outputTokens + cacheWriteTokens + cacheReadTokens
         }
@@ -41,8 +44,53 @@ enum Aggregator {
             s.cacheWriteTokens += e.cacheWrite5m + e.cacheWrite1h
             s.cacheReadTokens += e.cacheRead
             s.entryCount += 1
+            if e.cacheRead > 0 {
+                let p = Pricing.price(for: e.model)
+                s.cacheSavings += Double(e.cacheRead) * (p.inputPerMTok - p.cacheReadPerMTok) / 1_000_000
+            }
         }
         return s
+    }
+
+    struct ModelBucket: Identifiable {
+        let date: Date
+        let model: String
+        let cost: Double
+        var id: String { "\(date.timeIntervalSince1970)|\(model)" }
+    }
+
+    /// Per-bucket per-model-family cost slices for the stacked cost chart.
+    /// Hourly buckets for single-day ranges, daily otherwise.
+    static func byBucketModel(_ entries: [UsageEntry], hourly: Bool,
+                              calendar: Calendar = .current) -> [ModelBucket] {
+        var dict: [Date: [String: Double]] = [:]
+        for e in entries {
+            let bucket = hourly
+                ? (calendar.dateInterval(of: .hour, for: e.timestamp)?.start ?? e.timestamp)
+                : calendar.startOfDay(for: e.timestamp)
+            dict[bucket, default: [:]][shortModel(e.model), default: 0] += e.cost
+        }
+        var out: [ModelBucket] = []
+        for (date, models) in dict {
+            for (model, cost) in models {
+                out.append(ModelBucket(date: date, model: model, cost: cost))
+            }
+        }
+        return out.sorted { $0.date == $1.date ? $0.model < $1.model : $0.date < $1.date }
+    }
+
+    /// Hypothetical total cost if every entry's token mix were billed at the
+    /// given model pricing. Powers the what-if comparison card.
+    static func whatIfCost(_ entries: [UsageEntry], pricing p: ModelPricing) -> Double {
+        var total = 0.0
+        for e in entries {
+            total += (Double(e.inputTokens) * p.inputPerMTok
+                    + Double(e.outputTokens) * p.outputPerMTok
+                    + Double(e.cacheWrite5m) * p.cacheWrite5mPerMTok
+                    + Double(e.cacheWrite1h) * p.cacheWrite1hPerMTok
+                    + Double(e.cacheRead) * p.cacheReadPerMTok) / 1_000_000
+        }
+        return total
     }
 
     static func filter(_ entries: [UsageEntry], range: DateInterval) -> [UsageEntry] {
